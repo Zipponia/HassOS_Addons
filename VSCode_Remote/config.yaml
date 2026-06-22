@@ -1,0 +1,31 @@
+name: VS Code Remote SSH (Debian)
+version: "1.0.0"
+slug: vscode_remote_debian
+description: >-
+  Glibc-based SSH server so VS Code desktop Remote-SSH can run its
+  server on Home Assistant OS (avoids the Alpine/musl problem).
+url: "https://github.com/Zipponia/HassOS_Addons/tree/main/VSCode_Remote"
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: services
+boot: manual
+host_network: false
+ports:
+  "22/tcp": 2222
+ports_description:
+  "22/tcp": "SSH for VS Code Remote-SSH (host port 2222)"
+map:
+  - config:rw
+  - addons:rw
+  - ssl:rw
+  - share:rw
+  - backup:rw
+  - media:rw
+apparmor: false
+options:
+  authorized_keys: []
+schema:
+  authorized_keys:
+    - str
