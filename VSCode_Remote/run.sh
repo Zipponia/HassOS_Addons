@@ -25,6 +25,16 @@ if [ ! -L /root/.vscode-server ]; then
   ln -s /data/vscode-server /root/.vscode-server
 fi
 
+# --- convenience symlinks in root's home -----------------------------------
+# VS Code Remote-SSH opens the user's home (/root) by default. Linking the
+# mapped Home Assistant folders here makes them show up in the Explorer right
+# after connecting, without changing $HOME.
+for d in homeassistant addons ssl share media backup; do
+  if [ -d "/${d}" ]; then
+    ln -sfn "/${d}" "/root/${d}"
+  fi
+done
+
 # --- persistent host keys (survive restarts) -------------------------------
 mkdir -p /data/ssh
 for t in rsa ed25519; do

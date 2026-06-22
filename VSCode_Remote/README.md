@@ -35,9 +35,12 @@ authorized_keys:
        Port 22
    ```
 
-3. Connect with Remote-SSH and **open the folder `/homeassistant`** — that is the
-   Home Assistant configuration directory (`configuration.yaml`, `automations.yaml`,
-   etc.). You can edit it directly with full VS Code features.
+3. Connect with Remote-SSH. VS Code opens root's home (`/root`), where the add-on
+   creates convenience symlinks to all mapped folders — so you immediately see
+   `homeassistant`, `addons`, `ssl`, etc. in the Explorer. Open
+   **`/homeassistant`** to edit the Home Assistant configuration
+   (`configuration.yaml`, `automations.yaml`, etc.) with full VS Code features.
+   Once opened, VS Code remembers it and reopens it on the next connection.
 
 ### Available folders
 
