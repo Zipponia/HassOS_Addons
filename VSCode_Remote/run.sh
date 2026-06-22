@@ -15,6 +15,16 @@ chmod 600 /root/.ssh/authorized_keys
 KEYCOUNT=$(grep -c . /root/.ssh/authorized_keys || true)
 echo "[info] Loaded ${KEYCOUNT} authorized key(s)."
 
+# --- persistent VS Code Server (survives restarts/updates) -----------------
+# VS Code downloads its server into ~/.vscode-server. Keeping it on /data
+# means it is not re-downloaded on every add-on restart and reconnects fast
+# (also works offline after the first connection).
+mkdir -p /data/vscode-server
+if [ ! -L /root/.vscode-server ]; then
+  rm -rf /root/.vscode-server
+  ln -s /data/vscode-server /root/.vscode-server
+fi
+
 # --- persistent host keys (survive restarts) -------------------------------
 mkdir -p /data/ssh
 for t in rsa ed25519; do
@@ -41,6 +51,15 @@ HostKey /data/ssh/ssh_host_ed25519_key
 Subsystem sftp internal-sftp
 AcceptEnv LANG LC_*
 ClientAliveInterval 60
+ClientAliveCountMax 3
+# VS Code Remote-SSH features: port forwarding, agent forwarding, and
+# many concurrent channels/sessions.
+AllowTcpForwarding yes
+AllowStreamLocalForwarding yes
+AllowAgentForwarding yes
+PermitTunnel no
+X11Forwarding no
+MaxSessions 30
 EOF
 
 echo "[info] Starting sshd (container :22 -> host :2222)..."

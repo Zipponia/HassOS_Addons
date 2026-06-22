@@ -21,10 +21,35 @@ authorized_keys:
 
 ## Usage
 
-Connect from your machine with VS Code Remote-SSH (user `root`, host port `2222`):
+1. Generate an SSH key pair on your computer if you don't have one
+   (`ssh-keygen -t ed25519`) and put the **public** key in the `authorized_keys`
+   option above.
+2. In VS Code install the **Remote - SSH** extension, then add an SSH host:
 
-```
-ssh -p 2222 root@<home-assistant-ip>
-```
+   ```
+   Host homeassistant
+       HostName <home-assistant-ip>
+       User root
+       Port 2222
+   ```
 
-Host keys are persisted under `/data/ssh` so they survive add-on restarts.
+3. Connect with Remote-SSH and **open the folder `/homeassistant`** — that is the
+   Home Assistant configuration directory (`configuration.yaml`, `automations.yaml`,
+   etc.). You can edit it directly with full VS Code features.
+
+### Available folders
+
+| Path             | Maps to                                   |
+| ---------------- | ----------------------------------------- |
+| `/homeassistant` | Home Assistant configuration (edit here)  |
+| `/addons`        | Local add-ons                             |
+| `/ssl`           | SSL certificates                          |
+| `/share`         | Shared files                              |
+| `/media`         | Media                                     |
+| `/backup`        | Backups                                   |
+
+### Notes
+
+- Host keys are persisted under `/data/ssh` and the VS Code Server under
+  `/data/vscode-server`, so both survive add-on restarts and updates.
+- Password login is disabled — only the listed SSH keys can connect.
