@@ -57,10 +57,11 @@ ClientAliveCountMax 3
 AllowTcpForwarding yes
 AllowStreamLocalForwarding yes
 AllowAgentForwarding yes
+StreamLocalBindUnlink yes
 PermitTunnel no
 X11Forwarding no
 MaxSessions 30
 EOF
 
-echo "[info] Starting sshd (container :22 -> host :2222)..."
+echo "[info] Starting sshd (container :22 -> host :22)..."
 exec /usr/sbin/sshd -D -e

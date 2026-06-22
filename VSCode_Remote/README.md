@@ -5,8 +5,10 @@ on Home Assistant OS. Uses a Debian (`bookworm`) base image instead of Alpine,
 which avoids the musl / `gcompat` / `fcntl64` problem that breaks Remote-SSH on
 the standard Alpine-based SSH add-ons with recent VS Code versions.
 
-Listens on host port **2222** so it can run alongside the existing
-Advanced SSH & Web Terminal add-on (port 22).
+Listens on host port **22**.
+
+> If you also run the *Advanced SSH & Web Terminal* add-on on port 22, change
+> the host port of one of the two to avoid a conflict.
 
 ## Configuration
 
@@ -30,7 +32,7 @@ authorized_keys:
    Host homeassistant
        HostName <home-assistant-ip>
        User root
-       Port 2222
+       Port 22
    ```
 
 3. Connect with Remote-SSH and **open the folder `/homeassistant`** — that is the
