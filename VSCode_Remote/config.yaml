@@ -1,5 +1,5 @@
 name: VS Code Remote SSH (Debian)
-version: "1.3.0"
+version: "1.4.0"
 slug: vscode_remote_debian
 description: >-
   Glibc-based SSH server so VS Code desktop Remote-SSH can run its
