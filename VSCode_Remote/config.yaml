@@ -1,5 +1,5 @@
 name: VS Code Remote SSH (Debian)
-version: "1.4.0"
+version: "1.5.0"
 slug: vscode_remote_debian
 description: >-
   Glibc-based SSH server so VS Code desktop Remote-SSH can run its
@@ -18,11 +18,28 @@ ports_description:
   "22/tcp": "SSH for VS Code Remote-SSH (host port 22)"
 map:
   - homeassistant_config:rw
+  - all_addon_configs:rw
   - addons:rw
   - ssl:rw
   - share:rw
   - backup:rw
   - media:rw
+# --- Full-system access (Protection mode must be turned OFF in the add-on UI) ---
+# Grants Claude Code inside the container control over Home Assistant, the
+# Supervisor and every Docker container (including the Scrypted add-on).
+hassio_api: true
+hassio_role: admin
+homeassistant_api: true
+docker_api: true
+host_pid: true
+full_access: true
+privileged:
+  - NET_ADMIN
+  - NET_RAW
+  - SYS_ADMIN
+  - SYS_PTRACE
+  - SYS_RAWIO
+  - DAC_READ_SEARCH
 apparmor: false
 options:
   authorized_keys: []
