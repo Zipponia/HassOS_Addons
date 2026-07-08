@@ -26,16 +26,25 @@ if [ ! -L /root/.vscode-server ]; then
 fi
 
 # --- persistent Claude Code home (auth + chat history, survives restarts/updates) ---
-# The `claude` CLI stores auth, chat history and memory under ~/.claude. Keep it
-# on /data so it survives restarts and add-on upgrades. On the first run where a
-# real ~/.claude already exists, migrate its contents instead of deleting them.
+# The `claude` CLI stores auth, chat history and memory under ~/.claude, plus MCP
+# config, trust settings and the project list in ~/.claude.json. Keep both on
+# /data so they survive restarts and add-on upgrades. On the first run where the
+# real paths still exist, migrate their contents instead of deleting them.
 mkdir -p /data/claude-home
 if [ ! -L /root/.claude ]; then
   if [ -d /root/.claude ]; then
-    cp -rn /root/.claude/. /data/claude-home/ 2>/dev/null || true
+    cp -a /root/.claude/. /data/claude-home/ 2>/dev/null || true
     rm -rf /root/.claude
   fi
   ln -s /data/claude-home /root/.claude
+fi
+
+if [ ! -L /root/.claude.json ]; then
+  if [ -f /root/.claude.json ]; then
+    cp -a /root/.claude.json /data/claude-home/.claude.json 2>/dev/null || true
+    rm -f /root/.claude.json
+  fi
+  ln -s /data/claude-home/.claude.json /root/.claude.json
 fi
 
 # --- convenience symlinks in root's home -----------------------------------
