@@ -1,5 +1,5 @@
 name: VS Code Remote SSH (Debian)
-version: "1.5.2"
+version: "1.6.0"
 slug: vscode_remote_debian
 description: >-
   Glibc-based SSH server so VS Code desktop Remote-SSH can run its
@@ -10,7 +10,9 @@ arch:
   - amd64
 init: false
 startup: services
-boot: manual
+# Remote access must come back on its own after a Home Assistant reboot,
+# otherwise the add-on can only be started from the local UI.
+boot: auto
 host_network: false
 ports:
   "22/tcp": 22
@@ -42,6 +44,10 @@ privileged:
 apparmor: false
 options:
   authorized_keys: []
+  prune_old_vscode_servers: true
+  keep_vscode_servers: 2
 schema:
   authorized_keys:
     - str
+  prune_old_vscode_servers: bool
+  keep_vscode_servers: int(1,10)

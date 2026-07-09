@@ -14,6 +14,10 @@ chmod 600 /root/.ssh/authorized_keys
 
 KEYCOUNT=$(grep -c . /root/.ssh/authorized_keys || true)
 echo "[info] Loaded ${KEYCOUNT} authorized key(s)."
+if [ "${KEYCOUNT}" -eq 0 ]; then
+  echo "[warn] No authorized_keys configured. Password login is disabled, so"
+  echo "[warn] nobody can log in. Add your SSH public key in the add-on options."
+fi
 
 # --- persistent VS Code Server (survives restarts/updates) -----------------
 # VS Code downloads its server into ~/.vscode-server. Keeping it on /data
@@ -23,6 +27,20 @@ mkdir -p /data/vscode-server
 if [ ! -L /root/.vscode-server ]; then
   rm -rf /root/.vscode-server
   ln -s /data/vscode-server /root/.vscode-server
+fi
+
+# VS Code keeps every server build it ever downloaded (~500 MB each), so /data
+# grows without bound. Nothing is connected at startup, so it is safe to drop
+# the oldest builds and keep only the most recent ones.
+PRUNE=$(jq -r '.prune_old_vscode_servers // true' "${CONFIG_PATH}" 2>/dev/null || echo true)
+KEEP=$(jq -r '.keep_vscode_servers // 2' "${CONFIG_PATH}" 2>/dev/null || echo 2)
+SERVERS_DIR=/data/vscode-server/cli/servers
+if [ "${PRUNE}" = "true" ] && [ -d "${SERVERS_DIR}" ]; then
+  # Newest first by mtime; delete everything past the first ${KEEP} entries.
+  ls -1dt "${SERVERS_DIR}"/Stable-* 2>/dev/null | tail -n "+$((KEEP + 1))" | while read -r old; do
+    echo "[info] Pruning old VS Code server: $(basename "${old}")"
+    rm -rf "${old}"
+  done
 fi
 
 # --- persistent Claude Code home (auth + chat history, survives restarts/updates) ---
@@ -84,6 +102,11 @@ Subsystem sftp internal-sftp
 AcceptEnv LANG LC_*
 ClientAliveInterval 60
 ClientAliveCountMax 3
+TCPKeepAlive yes
+# Remote-SSH opens several connections at once and retries after network blips;
+# the default MaxStartups (10) starts refusing them on a flaky link.
+MaxStartups 30:50:100
+LoginGraceTime 120
 # VS Code Remote-SSH features: port forwarding, agent forwarding, and
 # many concurrent channels/sessions.
 AllowTcpForwarding yes

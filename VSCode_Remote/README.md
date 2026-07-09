@@ -1,60 +1,63 @@
-# VS Code Remote SSH (Debian)
+<p align="center">
+  <img src="logo.png" alt="VS Code Remote SSH for Home Assistant OS" width="480">
+</p>
 
-A glibc-based SSH server so VS Code desktop **Remote-SSH** can run its server
-on Home Assistant OS. Uses a Debian (`bookworm`) base image instead of Alpine,
-which avoids the musl / `gcompat` / `fcntl64` problem that breaks Remote-SSH on
-the standard Alpine-based SSH add-ons with recent VS Code versions.
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.6.0-007ACC" alt="Version">
+  <img src="https://img.shields.io/badge/arch-aarch64%20%7C%20amd64-41BDF5" alt="Architectures">
+  <img src="https://img.shields.io/badge/base-Debian%20bookworm-A81D33" alt="Base image">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</p>
 
-Listens on host port **22**.
+A glibc-based SSH server so the **VS Code desktop app** can attach to Home
+Assistant OS with **Remote-SSH** and edit your configuration with the full
+editor — extensions, IntelliSense, integrated terminal and source control.
 
-> If you also run the *Advanced SSH & Web Terminal* add-on on port 22, change
-> the host port of one of the two to avoid a conflict.
+The VS Code Server ships a bundled Node binary linked against **glibc**. The
+Alpine-based SSH add-ons use **musl**, so Remote-SSH breaks on recent VS Code
+versions (`gcompat` / `fcntl64` errors). This add-on uses a Debian base image,
+where that binary runs natively.
 
-## Configuration
+## Features
+
+- 🔌 **Remote-SSH that works** — Debian/glibc base, no musl workarounds.
+- 📂 **Config at your fingertips** — `/homeassistant` and every mapped folder
+  symlinked into `/root`, visible the moment you connect.
+- 💾 **Nothing is lost on restart** — VS Code Server, SSH host keys and the
+  Claude Code home (`~/.claude`, `~/.claude.json`) persist on `/data`.
+- 🧹 **No disk creep** — old VS Code Server builds are pruned automatically.
+- 🔑 **Key-only auth** — password login is disabled.
+- 🐳 **Full-system access** (optional) — with Protection mode off, manage Home
+  Assistant, the Supervisor and every Docker container from the terminal.
+
+## Installation
+
+Add the repository, then install the add-on:
+
+```
+https://github.com/Zipponia/HassOS_Addons
+```
+
+**Settings → Add-ons → Add-on Store → ⋮ → Repositories**
+
+## Quick start
 
 ```yaml
 authorized_keys:
-  - "ssh-ed25519 AAAA... your-public-key"
+  - "ssh-ed25519 AAAAC3Nz... you@your-mac"
 ```
 
-| Option            | Description                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| `authorized_keys` | List of SSH public keys allowed to connect (password login is disabled). |
+Start the add-on, then connect:
 
-## Usage
+```
+ssh -p 22 root@<home-assistant-ip>
+```
 
-1. Generate an SSH key pair on your computer if you don't have one
-   (`ssh-keygen -t ed25519`) and put the **public** key in the `authorized_keys`
-   option above.
-2. In VS Code install the **Remote - SSH** extension, then add an SSH host:
+In VS Code: **Remote-SSH: Connect to Host…**, then open `/homeassistant`.
 
-   ```
-   Host homeassistant
-       HostName <home-assistant-ip>
-       User root
-       Port 22
-   ```
+📖 Full documentation, options and troubleshooting: **[DOCS.md](DOCS.md)**
+📝 Version history: **[CHANGELOG.md](CHANGELOG.md)**
 
-3. Connect with Remote-SSH. VS Code opens root's home (`/root`), where the add-on
-   creates convenience symlinks to all mapped folders — so you immediately see
-   `homeassistant`, `addons`, `ssl`, etc. in the Explorer. Open
-   **`/homeassistant`** to edit the Home Assistant configuration
-   (`configuration.yaml`, `automations.yaml`, etc.) with full VS Code features.
-   Once opened, VS Code remembers it and reopens it on the next connection.
+## License
 
-### Available folders
-
-| Path             | Maps to                                   |
-| ---------------- | ----------------------------------------- |
-| `/homeassistant` | Home Assistant configuration (edit here)  |
-| `/addons`        | Local add-ons                             |
-| `/ssl`           | SSL certificates                          |
-| `/share`         | Shared files                              |
-| `/media`         | Media                                     |
-| `/backup`        | Backups                                   |
-
-### Notes
-
-- Host keys are persisted under `/data/ssh` and the VS Code Server under
-  `/data/vscode-server`, so both survive add-on restarts and updates.
-- Password login is disabled — only the listed SSH keys can connect.
+MIT — see [LICENSE](../LICENSE).
