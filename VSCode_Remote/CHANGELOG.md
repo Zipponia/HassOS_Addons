@@ -117,6 +117,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `gcompat`/`fcntl64` problem. Public-key authentication only; SSH host keys
   persisted on `/data/ssh`.
 
+[1.6.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.0
 [1.5.2]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.5.2
 [1.5.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.5.1
