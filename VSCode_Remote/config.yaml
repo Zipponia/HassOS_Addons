@@ -1,5 +1,5 @@
 name: VS Code Remote SSH (Debian)
-version: "1.6.0"
+version: "1.6.1"
 slug: vscode_remote_debian
 description: >-
   Glibc-based SSH server so VS Code desktop Remote-SSH can run its
@@ -46,8 +46,10 @@ options:
   authorized_keys: []
   prune_old_vscode_servers: true
   keep_vscode_servers: 2
+  prune_interval_hours: 12
 schema:
   authorized_keys:
     - str
   prune_old_vscode_servers: bool
   keep_vscode_servers: int(1,10)
+  prune_interval_hours: int(0,168)

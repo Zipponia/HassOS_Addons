@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.0-007ACC" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.6.1-007ACC" alt="Version">
   <img src="https://img.shields.io/badge/arch-aarch64%20%7C%20amd64-41BDF5" alt="Architectures">
   <img src="https://img.shields.io/badge/base-Debian%20bookworm-A81D33" alt="Base image">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">

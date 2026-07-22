@@ -3,6 +3,22 @@
 All notable changes to this add-on are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.1] - 2026-07-22
+
+### Fixed
+
+- Pruning old VS Code Server builds only ran at startup, but this container
+  stays up for weeks — three new ~590 MB builds accumulated over 13 days of
+  uptime and `/data/vscode-server` climbed back to 2.9 GB. Pruning now also
+  runs periodically (default every 12 h, option `prune_interval_hours`,
+  `0` disables it).
+- Pruning now skips any build with a running server process, so it can no
+  longer remove the build an active VS Code session is using.
+
+### Added
+
+- Option `prune_interval_hours` (int, 0–168, default `12`).
+
 ## [1.6.0] - 2026-07-09
 
 ### Added
