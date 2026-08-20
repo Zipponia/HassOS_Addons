@@ -8,7 +8,11 @@ FROM ${BUILD_FROM}
 # tar/gzip  -> VS Code Server extraction
 # procps    -> `ps`, used by VS Code to detect an already-running server
 # git       -> source control features inside VS Code
+#
+# dist-upgrade runs first because the base image can lag months behind on
+# security updates (ca-certificates, curl, xz-utils); stale CA certs break TLS.
 RUN apt-get update \
+    && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends \
         openssh-server \
         jq \
@@ -32,6 +36,19 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
+
+# Claude Code CLI. Installing it here (rather than by hand inside a running
+# container) means it survives add-on rebuilds, which wipe the overlay. The
+# /usr/local/bin symlink puts it on PATH for non-interactive SSH sessions,
+# which never source ~/.bashrc where the installer adds ~/.local/bin.
+#
+# The installer also seeds ~/.claude and ~/.claude.json. Those are build-time
+# stubs, and run.sh would migrate them onto /data over the real credentials,
+# so remove them and let run.sh link the persisted copies instead.
+RUN curl -fsSL https://claude.ai/install.sh | bash \
+    && ln -sf /root/.local/bin/claude /usr/local/bin/claude \
+    && rm -rf /root/.claude /root/.claude.json \
+    && /usr/local/bin/claude --version
 
 COPY run.sh /
 RUN chmod a+x /run.sh

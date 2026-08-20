@@ -3,6 +3,33 @@
 All notable changes to this add-on are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] - 2026-08-20
+
+### Added
+
+- **Claude Code CLI is now part of the image.** It had been installed by hand
+  inside the running container, i.e. on the ephemeral overlay — so the 1.6.1
+  rebuild deleted it, while its credentials and history sat safely on `/data`.
+  Installing it in the Dockerfile means every rebuild reinstalls it instead of
+  wiping it. A `/usr/local/bin/claude` symlink puts it on `PATH` for
+  non-interactive SSH sessions, which never source `~/.bashrc`.
+- **Watchdog on the SSH port** (`watchdog: tcp://[HOST]:[PORT:22]`). The
+  Supervisor previously only noticed a dead container, not a hung `sshd` — the
+  failure mode that actually locks you out of a remote-access add-on.
+- **Persistent shell and git state**: `~/.bash_history`, `~/.gitconfig` and
+  `~/.ssh/known_hosts` now live on `/data` instead of being reset by rebuilds.
+
+### Changed
+
+- The image applies `apt-get dist-upgrade` at build time. The base image lagged
+  months behind on security updates — `ca-certificates` was still the 2023
+  release, old enough to reject recently issued certificates, alongside stale
+  `curl`, `xz-utils` and `liblzma`.
+- Persistence migrations copy with `-n` (no-clobber), so state already on
+  `/data` always wins over a file the image ships at the same path. Without
+  this, the build-time `~/.claude` stub the Claude installer creates would have
+  been copied over the real credentials and the deletion-guard hook.
+
 ## [1.6.1] - 2026-07-22
 
 ### Fixed
@@ -117,6 +144,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `gcompat`/`fcntl64` problem. Public-key authentication only; SSH host keys
   persisted on `/data/ssh`.
 
+[1.7.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.7.0
 [1.6.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.0
 [1.5.2]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.5.2

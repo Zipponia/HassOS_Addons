@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.1-007ACC" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.7.0-007ACC" alt="Version">
   <img src="https://img.shields.io/badge/arch-aarch64%20%7C%20amd64-41BDF5" alt="Architectures">
   <img src="https://img.shields.io/badge/base-Debian%20bookworm-A81D33" alt="Base image">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -23,8 +23,13 @@ where that binary runs natively.
 - 🔌 **Remote-SSH that works** — Debian/glibc base, no musl workarounds.
 - 📂 **Config at your fingertips** — `/homeassistant` and every mapped folder
   symlinked into `/root`, visible the moment you connect.
-- 💾 **Nothing is lost on restart** — VS Code Server, SSH host keys and the
-  Claude Code home (`~/.claude`, `~/.claude.json`) persist on `/data`.
+- 💾 **Nothing is lost on restart** — VS Code Server, SSH host keys, shell and
+  git state, and the Claude Code home (`~/.claude`, `~/.claude.json`) persist
+  on `/data`.
+- 🤖 **Claude Code included** — the CLI ships in the image, so it survives
+  rebuilds instead of having to be reinstalled by hand.
+- 🩺 **Watchdog on port 22** — the Supervisor restarts the add-on if `sshd`
+  stops answering, not just if the container dies.
 - 🧹 **No disk creep** — old VS Code Server builds are pruned automatically.
 - 🔑 **Key-only auth** — password login is disabled.
 - 🐳 **Full-system access** (optional) — with Protection mode off, manage Home

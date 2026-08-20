@@ -71,10 +71,13 @@ fi
 # config, trust settings and the project list in ~/.claude.json. Keep both on
 # /data so they survive restarts and add-on upgrades. On the first run where the
 # real paths still exist, migrate their contents instead of deleting them.
+# The copies are no-clobber (-n) on purpose: whatever is already on /data is
+# the real, persisted state, and must win over anything the image happens to
+# ship at the same path.
 mkdir -p /data/claude-home
 if [ ! -L /root/.claude ]; then
   if [ -d /root/.claude ]; then
-    cp -a /root/.claude/. /data/claude-home/ 2>/dev/null || true
+    cp -an /root/.claude/. /data/claude-home/ 2>/dev/null || true
     rm -rf /root/.claude
   fi
   ln -s /data/claude-home /root/.claude
@@ -82,11 +85,30 @@ fi
 
 if [ ! -L /root/.claude.json ]; then
   if [ -f /root/.claude.json ]; then
-    cp -a /root/.claude.json /data/claude-home/.claude.json 2>/dev/null || true
+    cp -an /root/.claude.json /data/claude-home/.claude.json 2>/dev/null || true
     rm -f /root/.claude.json
   fi
   ln -s /data/claude-home/.claude.json /root/.claude.json
 fi
+
+# --- persistent shell and git state ----------------------------------------
+# Command history, git identity and known_hosts also live on the ephemeral
+# overlay, so a rebuild silently resets them. Same treatment as the rest.
+mkdir -p /data/dotfiles /data/ssh
+link_dotfile() {
+  target="$1"   # path under /root
+  store="$2"    # path under /data
+  [ -L "${target}" ] && return 0
+  if [ -f "${target}" ]; then
+    cp -an "${target}" "${store}" 2>/dev/null || true
+    rm -f "${target}"
+  fi
+  [ -e "${store}" ] || : > "${store}"
+  ln -s "${store}" "${target}"
+}
+link_dotfile /root/.bash_history    /data/dotfiles/.bash_history
+link_dotfile /root/.gitconfig       /data/dotfiles/.gitconfig
+link_dotfile /root/.ssh/known_hosts /data/ssh/known_hosts
 
 # --- convenience symlinks in root's home -----------------------------------
 # VS Code Remote-SSH opens the user's home (/root) by default. Linking the

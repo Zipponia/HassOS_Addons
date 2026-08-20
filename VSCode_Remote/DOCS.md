@@ -90,10 +90,21 @@ restart or rebuild. These are symlinked onto `/data`, so they survive:
 | `~/.vscode-server` | `/data/vscode-server` |
 | `~/.claude` | `/data/claude-home` |
 | `~/.claude.json` | `/data/claude-home/.claude.json` |
-| SSH host keys | `/data/ssh` |
+| `~/.bash_history`, `~/.gitconfig` | `/data/dotfiles` |
+| SSH host keys, `~/.ssh/known_hosts` | `/data/ssh` |
 
 Persisting the host keys means your SSH client never warns about a changed host
 key after an add-on restart.
+
+Migrations copy with `-n` (no-clobber): whatever is already on `/data` is the
+real state and always wins over a file the image ships at the same path.
+
+**Programs are not persisted, and should not be.** Anything you install by hand
+in a shell (`apt install`, `npm -g`, a downloaded binary) lands on the container
+overlay and is erased by the next rebuild — only `/data` survives. That is why
+the Claude Code CLI is installed in the Dockerfile rather than by hand: its
+configuration lives on `/data`, but the binary belongs in the image. Install
+long-lived tooling the same way, by adding it to the Dockerfile.
 
 ## Full-system access
 
