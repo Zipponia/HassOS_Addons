@@ -50,6 +50,7 @@ RUN curl -fsSL https://claude.ai/install.sh | bash \
     && rm -rf /root/.claude /root/.claude.json \
     && /usr/local/bin/claude --version
 
+COPY deletion-guard.sh /usr/share/vscode-remote/deletion-guard.sh
 COPY run.sh /
 RUN chmod a+x /run.sh
 

@@ -91,6 +91,50 @@ if [ ! -L /root/.claude.json ]; then
   ln -s /data/claude-home/.claude.json /root/.claude.json
 fi
 
+# --- Claude Code permissions (managed by the add-on) -----------------------
+# This container runs as root, and Claude Code refuses to bypass permission
+# checks for root ("--dangerously-skip-permissions cannot be used with
+# root/sudo privileges"). So `defaultMode: bypassPermissions` is silently
+# ignored and every single command ends up prompting, while `dontAsk` hands
+# the decision to an automatic classifier that denies legitimate work. Plain
+# allow/ask rules are unaffected by any of that, so those are what we install:
+# everything runs unprompted, deletions still ask. Existing keys are merged,
+# not replaced, so anything else the user configured survives.
+mkdir -p /data/claude-home/hooks
+install -m 0755 /usr/share/vscode-remote/deletion-guard.sh \
+  /data/claude-home/hooks/deletion-guard.sh 2>/dev/null \
+  || echo "[warn] Could not install the deletion-guard hook."
+
+CLAUDE_SETTINGS=/data/claude-home/settings.json
+[ -s "${CLAUDE_SETTINGS}" ] || echo '{}' > "${CLAUDE_SETTINGS}"
+
+if jq -e . "${CLAUDE_SETTINGS}" >/dev/null 2>&1; then
+  jq --arg hook 'bash ~/.claude/hooks/deletion-guard.sh' '
+    ["Bash(*)","Read","Edit","Write","Glob","Grep","WebFetch","WebSearch",
+     "TodoWrite","NotebookEdit","Task"] as $allow
+    | ["Bash(rm *)","Bash(rmdir *)","Bash(shred *)","Bash(unlink *)",
+       "Bash(docker rm *)","Bash(docker rmi *)","Bash(docker volume rm *)",
+       "Bash(git clean *)","Bash(find * -delete*)"] as $ask
+    | .permissions //= {}
+    | .permissions.allow = ((.permissions.allow // []) + $allow | unique)
+    | .permissions.ask   = ((.permissions.ask   // []) + $ask   | unique)
+    | if (.permissions.defaultMode == "bypassPermissions"
+          or .permissions.defaultMode == "dontAsk")
+      then del(.permissions.defaultMode) else . end
+    | .hooks //= {}
+    | .hooks.PreToolUse //= []
+    | if ([.hooks.PreToolUse[]?.hooks[]?.command] | index($hook))
+      then .
+      else .hooks.PreToolUse += [{matcher:"Bash",
+             hooks:[{type:"command",command:$hook}]}]
+      end
+  ' "${CLAUDE_SETTINGS}" > "${CLAUDE_SETTINGS}.tmp" \
+    && mv "${CLAUDE_SETTINGS}.tmp" "${CLAUDE_SETTINGS}" \
+    && echo "[info] Claude Code permissions set: runs unprompted, deletions ask."
+else
+  echo "[warn] ${CLAUDE_SETTINGS} is not valid JSON; leaving it untouched."
+fi
+
 # --- persistent shell and git state ----------------------------------------
 # Command history, git identity and known_hosts also live on the ephemeral
 # overlay, so a rebuild silently resets them. Same treatment as the rest.

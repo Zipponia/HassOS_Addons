@@ -3,6 +3,38 @@
 All notable changes to this add-on are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] - 2026-08-29
+
+### Added
+
+- **The add-on now manages Claude Code's permissions**, so the CLI runs
+  unprompted while deletions still ask for confirmation. Previously both the
+  rules and the guard hook only existed as hand-made files on `/data` — not
+  versioned, not reproducible, and gone if `/data` were ever reset.
+  - `deletion-guard.sh` ships in the image and is installed into
+    `~/.claude/hooks/` on every start.
+  - `~/.claude/settings.json` gets the `allow` rules (Bash, Read, Edit, Write,
+    Glob, Grep, WebFetch, WebSearch, …) and the `ask` rules for deletions.
+    Existing keys are **merged, not replaced**, so your own rules, model and
+    other settings survive.
+
+### Fixed
+
+- **Claude Code prompted for every single command and file read.** The
+  container runs as root, and Claude Code refuses to bypass permission checks
+  for root (`--dangerously-skip-permissions cannot be used with root/sudo
+  privileges` — `--allow-dangerously-skip-permissions` does not override it).
+  So `permissions.defaultMode: "bypassPermissions"` was silently ignored and
+  the session fell back to asking about everything. `dontAsk` is not a fix
+  either: it defers to an automatic classifier that denies legitimate calls,
+  such as POSTs to the Home Assistant API. Plain `allow`/`ask` rules are
+  unaffected by the root guard, so the add-on installs those and strips a
+  `defaultMode` of `bypassPermissions` or `dontAsk` when it finds one. Other
+  modes (e.g. `acceptEdits`) are left alone.
+- A `settings.json` that is not valid JSON is now left untouched with a warning
+  instead of being overwritten — Claude Code silently ignores the whole file
+  when it cannot parse it.
+
 ## [1.7.0] - 2026-08-20
 
 ### Added
@@ -144,6 +176,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `gcompat`/`fcntl64` problem. Public-key authentication only; SSH host keys
   persisted on `/data/ssh`.
 
+[1.8.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.7.0
 [1.6.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.0

@@ -120,6 +120,50 @@ effectively has root over your whole Home Assistant system. That is the intended
 trade-off for a development add-on; disable the extra privileges if you do not
 need them.
 
+## Claude Code permissions
+
+The Claude Code CLI ships with the add-on, and the add-on configures its
+permissions on every start: **it runs without prompting, except for commands
+that delete things, which still ask for confirmation.**
+
+Two pieces make that work:
+
+| Piece | Where |
+| ----- | ----- |
+| `allow` / `ask` rules | `~/.claude/settings.json` |
+| Deletion guard hook | `~/.claude/hooks/deletion-guard.sh` |
+
+Your own settings are **merged, not replaced** — custom rules, `model`, themes
+and anything else you set are preserved. If `settings.json` is not valid JSON
+the add-on leaves it alone and logs a warning (Claude Code silently ignores a
+file it cannot parse, so overwriting it would hide the real problem).
+
+The guard asks before `rm`, `rmdir`, `shred`, `unlink`, `truncate`, `docker rm`
+/ `rmi` / `volume rm` / `prune`, `apt remove` / `purge`, `git clean`, `ha …
+uninstall`, `mkfs`, `dd of=`, `--delete` flags and `-X DELETE` requests. It
+matches at command position, so a harmless `grep rm file` is not flagged. Edit
+the `patterns` array in the hook to change what is covered.
+
+### Why not `bypassPermissions`
+
+Because it cannot work here. The container runs as root, and Claude Code
+refuses to bypass permission checks for root:
+
+```
+--dangerously-skip-permissions cannot be used with root/sudo privileges
+```
+
+`--allow-dangerously-skip-permissions` does not override that guard. Setting
+`permissions.defaultMode: "bypassPermissions"` is therefore ignored, and the
+session falls back to prompting for **everything** — which looks like the
+setting was never read. `dontAsk` is not a substitute either: it hands each
+decision to an automatic classifier, which denies legitimate work such as POSTs
+to the Home Assistant API.
+
+Plain `allow`/`ask` rules are unaffected by the root guard, so those are what
+the add-on installs. It also strips a `defaultMode` of `bypassPermissions` or
+`dontAsk` if it finds one; other modes, such as `acceptEdits`, are left alone.
+
 ## Troubleshooting
 
 **The add-on starts but I cannot log in.**
