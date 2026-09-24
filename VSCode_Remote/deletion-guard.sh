@@ -5,14 +5,17 @@
 # ~/.claude/settings.json). This hook is what puts the confirmation back for
 # commands that DELETE things — files, containers, volumes, packages, add-ons.
 #
-# Patterns are anchored at command position (start of line, or after ; & | && ||)
-# so a harmless "grep rm file" is not flagged.
+# Patterns are anchored at command position so a harmless "grep rm file" is not
+# flagged. Command position means: start of line, after ; & | ( { or a backtick,
+# inside $( ), after then/do/else, or as the program run by xargs / find -exec.
+# Leading whitespace, sudo/command/exec/env wrappers, a backslash (\rm) and a
+# path (/bin/rm) are all skipped before the command name.
 set -u
 
 cmd=$(jq -r ".tool_input.command // empty" 2>/dev/null)
 [ -z "${cmd}" ] && exit 0
 
-POS='(^|[;&|]\s*)(sudo\s+)?'
+POS='(^|[;&|({`]|\$\(|\b(then|do|else)\s|\bxargs(\s+-\S+)*\s|\s-(exec|execdir|ok)\s)\s*(sudo\s+(-\S+\s+)*)?((command|exec|env)\s+(\S+=\S*\s+)*)?\\?(\S*/)?'
 
 patterns=(
   "${POS}"'(rm|rmdir|shred|unlink|truncate)(\s|$)'
@@ -25,7 +28,7 @@ patterns=(
   '(^|\s)--?delete(\s|$)'
   '-X\s*DELETE|--request\s*DELETE'
   '(^|\s)dd\s.*\sof='
-  '\smv\s+\S+\s+/dev/null'
+  "${POS}"'mv\s.*\s/dev/null(\s|$)'
 )
 
 for p in "${patterns[@]}"; do

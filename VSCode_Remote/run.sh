@@ -52,6 +52,16 @@ prune_vscode_servers() {
     echo "[info] Pruning old VS Code server: ${name}"
     rm -rf "${old}" || true
   done
+  # The Remote-SSH CLI (~/.vscode-server/code-<commit>, ~32 MB each) updates on
+  # its own schedule and its commits do not match the server builds, so keep
+  # just the newest one plus any that is still running.
+  ls -1t /data/vscode-server/code-* 2>/dev/null | tail -n +2 | while read -r old; do
+    if pgrep -f "${old}" >/dev/null 2>&1; then
+      continue
+    fi
+    echo "[info] Pruning old VS Code CLI: $(basename "${old}")"
+    rm -f "${old}" || true
+  done
   return 0
 }
 
@@ -111,7 +121,7 @@ CLAUDE_SETTINGS=/data/claude-home/settings.json
 if jq -e . "${CLAUDE_SETTINGS}" >/dev/null 2>&1; then
   jq --arg hook 'bash ~/.claude/hooks/deletion-guard.sh' '
     ["Bash(*)","Read","Edit","Write","Glob","Grep","WebFetch","WebSearch",
-     "TodoWrite","NotebookEdit","Task"] as $allow
+     "TodoWrite","NotebookEdit","Task","Agent"] as $allow
     | ["Bash(rm *)","Bash(rmdir *)","Bash(shred *)","Bash(unlink *)",
        "Bash(docker rm *)","Bash(docker rmi *)","Bash(docker volume rm *)",
        "Bash(git clean *)","Bash(find * -delete*)"] as $ask
@@ -133,6 +143,26 @@ if jq -e . "${CLAUDE_SETTINGS}" >/dev/null 2>&1; then
     && echo "[info] Claude Code permissions set: runs unprompted, deletions ask."
 else
   echo "[warn] ${CLAUDE_SETTINGS} is not valid JSON; leaving it untouched."
+fi
+
+# --- keep Claude Code current -------------------------------------------------
+# The CLI is baked into the image and its own auto-updater is off, so without
+# this it stays at whatever version was current on the last rebuild (it once
+# sat a month behind). An update lands on the overlay and is lost with the
+# container, so check on every start. Runs in the background: sshd must never
+# wait on the network.
+UPDATE_CLAUDE=$(jq -r '.update_claude_code // true' "${CONFIG_PATH}" 2>/dev/null || echo true)
+if [ "${UPDATE_CLAUDE}" = "true" ]; then
+  (
+    before=$(claude --version 2>/dev/null | cut -d' ' -f1)
+    timeout 300 claude update >/dev/null 2>&1 || true
+    after=$(claude --version 2>/dev/null | cut -d' ' -f1)
+    if [ "${before}" != "${after}" ]; then
+      echo "[info] Claude Code updated: ${before} -> ${after}."
+    else
+      echo "[info] Claude Code ${after} is up to date (or the update check failed)."
+    fi
+  ) &
 fi
 
 # --- persistent shell and git state ----------------------------------------

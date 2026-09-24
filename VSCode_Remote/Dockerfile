@@ -18,7 +18,6 @@ RUN apt-get update \
         jq \
         ca-certificates \
         curl \
-        gnupg \
         tar \
         gzip \
         procps \
@@ -45,8 +44,13 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 # The installer also seeds ~/.claude and ~/.claude.json. Those are build-time
 # stubs, and run.sh would migrate them onto /data over the real credentials,
 # so remove them and let run.sh link the persisted copies instead.
+#
+# ~/.local/bin also goes on PATH (ENV for run.sh, .bashrc for SSH shells):
+# Claude Code checks for it and warns on every `claude update` otherwise.
+ENV PATH="/root/.local/bin:${PATH}"
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && ln -sf /root/.local/bin/claude /usr/local/bin/claude \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /root/.bashrc \
     && rm -rf /root/.claude /root/.claude.json \
     && /usr/local/bin/claude --version
 

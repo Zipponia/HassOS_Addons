@@ -27,17 +27,24 @@ authorized_keys:
   - "ssh-ed25519 AAAAC3Nz... you@your-mac"
 prune_old_vscode_servers: true
 keep_vscode_servers: 2
+prune_interval_hours: 12
+update_claude_code: true
 ```
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `authorized_keys` | list of strings | `[]` | SSH **public** keys allowed to connect. Password login is disabled, so at least one key is required. |
-| `prune_old_vscode_servers` | bool | `true` | Delete old VS Code Server builds at startup. VS Code keeps every build it downloads (~500 MB each), which otherwise fills `/data`. |
+| `prune_old_vscode_servers` | bool | `true` | Delete old VS Code Server builds. VS Code keeps every build it downloads (~500 MB each), which otherwise fills `/data`. |
 | `keep_vscode_servers` | int (1–10) | `2` | How many of the most recent server builds to keep when pruning. |
+| `prune_interval_hours` | int (0–168) | `12` | Prune again every N hours while the add-on runs. `0` prunes at startup only. |
+| `update_claude_code` | bool | `true` | Run `claude update` in the background on every start (see below). |
 
-Pruning runs at add-on start, before `sshd` accepts connections, so it never
-removes a build that is in use. If VS Code needs a pruned build again, it simply
-re-downloads it.
+Pruning runs at add-on start and then every `prune_interval_hours`, because the
+container runs for weeks while VS Code downloads a new build on every desktop
+update. A build with a running server process is always skipped, so an active
+session is never broken. Old copies of the Remote-SSH CLI
+(`~/.vscode-server/code-<commit>`, ~32 MB each) are pruned too, keeping the
+newest one. If VS Code needs a pruned build again, it simply re-downloads it.
 
 ## Connecting
 
@@ -120,6 +127,14 @@ effectively has root over your whole Home Assistant system. That is the intended
 trade-off for a development add-on; disable the extra privileges if you do not
 need them.
 
+## Keeping Claude Code current
+
+The CLI is installed in the image, and its own auto-updater is off, so on its
+own it would stay at the version current on the last rebuild. With
+`update_claude_code` enabled (the default), the add-on runs `claude update` in
+the background on every start and logs the result. SSH is never delayed by it.
+An update lives on the container overlay, so it is redone after each restart.
+
 ## Claude Code permissions
 
 The Claude Code CLI ships with the add-on, and the add-on configures its
@@ -140,8 +155,12 @@ file it cannot parse, so overwriting it would hide the real problem).
 
 The guard asks before `rm`, `rmdir`, `shred`, `unlink`, `truncate`, `docker rm`
 / `rmi` / `volume rm` / `prune`, `apt remove` / `purge`, `git clean`, `ha …
-uninstall`, `mkfs`, `dd of=`, `--delete` flags and `-X DELETE` requests. It
-matches at command position, so a harmless `grep rm file` is not flagged. Edit
+uninstall`, `mkfs`, `dd of=`, `mv … /dev/null`, `--delete` flags and
+`-X DELETE` requests. It matches at command position, so a harmless
+`grep rm file` is not flagged. The usual ways around it are covered too:
+leading spaces, `/bin/rm`, `\rm`, `sudo` / `command` / `env` prefixes,
+`xargs rm`, `find -exec rm`, and commands inside `( )`, `{ }`, `$( )`,
+backticks or `if` / `for` bodies. Edit
 the `patterns` array in the hook to change what is covered.
 
 ### Why not `bypassPermissions`
@@ -196,4 +215,5 @@ already wedged, run **Remote-SSH: Kill VS Code Server on Host** and reconnect.
 
 **`/data` is getting large.**
 Check `du -sh /data/*`. The VS Code Server cache is the usual culprit; leave
-`prune_old_vscode_servers` enabled, or lower `keep_vscode_servers`.
+`prune_old_vscode_servers` enabled, or lower `keep_vscode_servers` or
+`prune_interval_hours`.

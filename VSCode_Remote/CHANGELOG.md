@@ -3,6 +3,36 @@
 All notable changes to this add-on are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.1] - 2026-09-24
+
+### Added
+
+- **Claude Code updates itself on every start** (`update_claude_code`, default
+  on). The CLI is baked into the image with its auto-updater off, so it stayed
+  at the version current on the last rebuild — it was found a month behind. The
+  check runs in the background, so sshd never waits on the network.
+- Old copies of the Remote-SSH CLI (`~/.vscode-server/code-<commit>`, ~32 MB
+  each) are now pruned too, keeping the newest one and any still running. They
+  were never removed and had piled up to five.
+
+### Fixed
+
+- **The deletion guard was easy to slip past.** It only matched at the very
+  start of a line or right after `;` `&` `|`, so `  rm x`, `/bin/rm x`,
+  `\rm x`, `command rm x`, `ls | xargs rm`, `find . -exec rm {} \;`,
+  `(rm x)`, `$(rm x)` and `rm` inside `if`/`for` bodies all ran without asking.
+  Every one of those now asks; harmless commands such as `grep rm file` still
+  do not.
+- `mv … /dev/null` was matched only with a leading space.
+- `Agent` added to the allow rules next to `Task`, the tool's former name.
+- `~/.local/bin` is now on `PATH`, silencing Claude Code's warning about it.
+
+### Changed
+
+- Dropped the unused `gnupg` package from the image.
+- DOCS: pruning section described the pre-1.6.1 startup-only behaviour and
+  left out `prune_interval_hours`.
+
 ## [1.8.0] - 2026-08-29
 
 ### Added
@@ -176,6 +206,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `gcompat`/`fcntl64` problem. Public-key authentication only; SSH host keys
   persisted on `/data/ssh`.
 
+[1.8.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.8.1
 [1.8.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.7.0
 [1.6.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.6.1
