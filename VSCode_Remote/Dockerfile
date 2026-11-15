@@ -1,5 +1,6 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
+ARG BUILD_ARCH
 
 # Install a real (glibc) OpenSSH server. Because the base is Debian,
 # the VS Code Server's bundled node binary runs natively — no gcompat,
@@ -8,6 +9,17 @@ FROM ${BUILD_FROM}
 # tar/gzip  -> VS Code Server extraction
 # procps    -> `ps`, used by VS Code to detect an already-running server
 # git       -> source control features inside VS Code
+#
+# The rest is a working toolbox for a shell (and Claude Code) on a Home
+# Assistant host:
+# python3 + websockets/aiohttp/yaml -> several HA operations exist only on the
+#             websocket API (dashboards, registries), and .storage must not be
+#             edited on disk. From apt, not pip: bookworm's Python is
+#             externally managed.
+# sqlite3   -> recorder and Zigbee databases
+# ping/nc/dig/ip -> network diagnosis
+# yamllint, less, rsync, unzip -> everyday editing
+# tzdata    -> so the TZ passed to SSH sessions resolves
 #
 # dist-upgrade runs first because the base image can lag months behind on
 # security updates (ca-certificates, curl, xz-utils); stale CA certs break TLS.
@@ -22,6 +34,22 @@ RUN apt-get update \
         gzip \
         procps \
         git \
+        python3 \
+        python3-pip \
+        python3-venv \
+        python3-websockets \
+        python3-aiohttp \
+        python3-yaml \
+        sqlite3 \
+        iputils-ping \
+        netcat-openbsd \
+        dnsutils \
+        iproute2 \
+        yamllint \
+        less \
+        rsync \
+        unzip \
+        tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Docker CLI (client only) so Claude Code can use the mounted Docker socket
@@ -35,6 +63,20 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
+
+# Home Assistant CLI (`ha`). It authenticates with SUPERVISOR_TOKEN, which
+# run.sh passes into SSH sessions.
+RUN arch="${BUILD_ARCH:-}" \
+    && if [ -z "${arch}" ]; then \
+         case "$(dpkg --print-architecture)" in \
+           arm64) arch=aarch64 ;; \
+           *)     arch=amd64 ;; \
+         esac; \
+       fi \
+    && curl -fsSL -o /usr/local/bin/ha \
+        "https://github.com/home-assistant/cli/releases/latest/download/ha_${arch}" \
+    && chmod 0755 /usr/local/bin/ha \
+    && /usr/local/bin/ha help > /dev/null
 
 # Claude Code CLI. Installing it here (rather than by hand inside a running
 # container) means it survives add-on rebuilds, which wipe the overlay. The
@@ -55,6 +97,7 @@ RUN curl -fsSL https://claude.ai/install.sh | bash \
     && /usr/local/bin/claude --version
 
 COPY deletion-guard.sh /usr/share/vscode-remote/deletion-guard.sh
+COPY CLAUDE.md /usr/share/vscode-remote/CLAUDE.md
 COPY run.sh /
 RUN chmod a+x /run.sh
 

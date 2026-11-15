@@ -3,6 +3,66 @@
 All notable changes to this add-on are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] - 2026-11-15
+
+### Added
+
+- **`SUPERVISOR_TOKEN` and the timezone now reach SSH sessions.** The add-on
+  has had Supervisor and Home Assistant API access all along, but sshd starts
+  sessions with a clean environment, so no shell, VS Code server or Claude Code
+  session could see the token, and `date` printed UTC. They are passed with
+  `SetEnv`, which also covers the non-interactive sessions VS Code uses;
+  `sshd_config` is now readable by root only.
+- **A working toolbox in the image**: `python3` with `pip`, `venv`,
+  `websockets`, `aiohttp` and `yaml` (several Home Assistant operations exist
+  only on the websocket API), the `ha` CLI, `sqlite3`, `ping`, `nc`, `dig`,
+  `ip`, `yamllint`, `less`, `rsync`, `unzip`.
+- **`extra_packages` option**: Debian packages installed in the background on
+  every start, for a tool the image does not ship.
+- **`update_interval_hours` option** (default 24): Claude Code is now checked
+  for updates periodically, not only at start. The container had been up 16
+  days with the CLI at 2.1.314 while the VS Code extension was at 2.1.325.
+- **`~/.claude/CLAUDE.md` is installed on first start**, describing the
+  environment to Claude Code: folder layout, API addresses, the `.storage`
+  rule, the tools. Never overwritten; an existing file is left alone.
+- **`/data/startup.log`** keeps the startup and maintenance messages, which
+  scroll out of the add-on log within days.
+- The deletion guard now also asks for: removal through `docker exec`, `ssh`,
+  `sh -c` / `bash -c` / `eval`; removal behind `timeout`, `nohup`, `time`,
+  `nice`, `ionice`; overwrites (`> file`, `cp /dev/null file`,
+  `git reset --hard`, `git checkout .`, `git restore .`); POSTs to the
+  Supervisor's uninstall, host reboot/shutdown and backup restore endpoints;
+  `ha … restore` / `reboot` / `shutdown`; `docker compose down -v`; and
+  `docker stop` / `kill` of the Home Assistant containers.
+
+### Changed
+
+- **Claude Code binaries live on `/data/claude-share`.** An update used to land
+  on the container overlay, so every rebuild downloaded ~300 MB again. Older
+  versions are deleted after a successful update.
+- **Add-on backups no longer carry ~2.5 GB of re-downloadable data** (VS Code
+  Server builds, the Remote-SSH CLI, extensions, logs, Claude Code binaries).
+  After a restore on a fresh system, remote extensions must be reinstalled.
+  DOCS now states that the backup contains credentials in plain text.
+- **The add-on log is readable again.** The Supervisor watchdog's probe of
+  port 22 wrote two sshd lines every two minutes — 4,326 of 4,327 lines. Those
+  two lines are filtered out; logins and real failures are not.
+- Only an ed25519 host key is used; the RSA key is removed. Clients that
+  connected before already know the ed25519 key.
+- Old `.cli.<commit>.log` files are pruned with their CLI builds, and orphaned
+  `.claude.json.tmp.*` files older than a day are removed at start.
+- DOCS: what each privilege is for.
+
+### Fixed
+
+- **`update_claude_code: false` and `prune_old_vscode_servers: false` were
+  ignored.** The options were read with jq's `//`, which replaces an explicit
+  `false` with the default, so neither switch could be turned off.
+- **The update log could not tell success from failure** ("is up to date (or
+  the update check failed)"). It now reports the exit code and the error.
+- The deletion guard prompted on heredoc bodies and quoted text — a commit
+  message with a line starting `rm`, or the word `--delete` in a string.
+
 ## [1.8.1] - 2026-09-24
 
 ### Added
@@ -206,6 +266,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   `gcompat`/`fcntl64` problem. Public-key authentication only; SSH host keys
   persisted on `/data/ssh`.
 
+[1.9.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.9.0
 [1.8.1]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.8.1
 [1.8.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Zipponia/HassOS_Addons/releases/tag/v1.7.0

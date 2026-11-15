@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.8.1-007ACC" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.9.0-007ACC" alt="Version">
   <img src="https://img.shields.io/badge/arch-aarch64%20%7C%20amd64-41BDF5" alt="Architectures">
   <img src="https://img.shields.io/badge/base-Debian%20bookworm-A81D33" alt="Base image">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -26,11 +26,15 @@ where that binary runs natively.
 - 💾 **Nothing is lost on restart** — VS Code Server, SSH host keys, shell and
   git state, and the Claude Code home (`~/.claude`, `~/.claude.json`) persist
   on `/data`.
-- 🤖 **Claude Code included** — the CLI ships in the image, so it survives
-  rebuilds instead of having to be reinstalled by hand.
+- 🤖 **Claude Code included** — the CLI ships in the image, keeps itself
+  updated, and is told where it is by a ready-made `CLAUDE.md`.
+- 🏠 **Home Assistant API ready** — `SUPERVISOR_TOKEN` and the timezone are set
+  in every SSH session; `ha`, `python3` (with `websockets`), `sqlite3` and
+  network tools are installed.
 - 🩺 **Watchdog on port 22** — the Supervisor restarts the add-on if `sshd`
   stops answering, not just if the container dies.
-- 🧹 **No disk creep** — old VS Code Server builds are pruned automatically.
+- 🧹 **No disk creep** — old VS Code Server builds are pruned automatically,
+  and re-downloadable data stays out of backups.
 - 🔑 **Key-only auth** — password login is disabled.
 - 🐳 **Full-system access** (optional) — with Protection mode off, manage Home
   Assistant, the Supervisor and every Docker container from the terminal.

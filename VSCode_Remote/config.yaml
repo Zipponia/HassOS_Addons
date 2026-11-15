@@ -1,5 +1,5 @@
 name: VS Code Remote SSH (Debian)
-version: "1.8.1"
+version: "1.9.0"
 slug: vscode_remote_debian
 description: >-
   Glibc-based SSH server so VS Code desktop Remote-SSH can run its
@@ -30,6 +30,17 @@ map:
   - share:rw
   - backup:rw
   - media:rw
+# Everything here is downloaded again when needed (VS Code Server builds, the
+# Remote-SSH CLI, extensions, logs, Claude Code binaries): about 2.5 GB that
+# made every add-on backup over 1 GB. The Supervisor matches these against the
+# end of each path, and ** is not recursive, so name the directories themselves.
+backup_exclude:
+  - "vscode-server/cli"
+  - "vscode-server/code-*"
+  - "vscode-server/extensions"
+  - "vscode-server/data/logs"
+  - "vscode-server/data/CachedExtensionVSIXs"
+  - "claude-share"
 # --- Full-system access (Protection mode must be turned OFF in the add-on UI) ---
 # Grants Claude Code inside the container control over Home Assistant, the
 # Supervisor and every Docker container (including the Scrypted add-on).
@@ -52,6 +63,8 @@ options:
   keep_vscode_servers: 2
   prune_interval_hours: 12
   update_claude_code: true
+  update_interval_hours: 24
+  extra_packages: []
 schema:
   authorized_keys:
     - str
@@ -59,3 +72,6 @@ schema:
   keep_vscode_servers: int(1,10)
   prune_interval_hours: int(0,168)
   update_claude_code: bool?
+  update_interval_hours: int(0,168)?
+  extra_packages:
+    - str
