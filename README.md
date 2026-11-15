@@ -34,7 +34,9 @@ base image, avoiding the musl/`gcompat`/`fcntl64` problem that breaks Remote-SSH
 on the Alpine-based SSH add-ons.
 
 Persists the VS Code Server, SSH host keys and the Claude Code home across
-restarts and rebuilds. Optionally grants full-system and Docker access.
+restarts and rebuilds. Ships Claude Code and a toolbox (`ha`, `python3`,
+`sqlite3`, network tools), with the Supervisor token set in every SSH session.
+Optionally grants full-system and Docker access.
 
 <br clear="left">
 
@@ -51,6 +53,8 @@ restarts and rebuilds. Optionally grants full-system and Docker access.
     ├── build.yaml
     ├── Dockerfile
     ├── run.sh
+    ├── deletion-guard.sh  # Claude Code hook: destructive commands ask first
+    ├── CLAUDE.md          # environment notes installed for Claude Code
     ├── icon.png
     ├── logo.png
     ├── DOCS.md
